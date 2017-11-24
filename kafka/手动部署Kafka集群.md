@@ -1,30 +1,34 @@
 ﻿# 手动部署Kafka集群
-标签（空格分隔）： kafka zookeeper
+标签（空格分隔）： Kafka ZooKeeper
+
+*@nukil V1.0*
 
 [TOC]
 
 -----
 ## 安装环境
-|IP            |CPU   | 内存 |主机名|
-|:-----------: |:----:|:----:|:----:|
-|192.168.62.142|    1 | 512M |kafka1|
-|192.168.62.147|    1 | 512M |kafka2|
-|192.168.62.152|    1 | 512M |kafka3|
+|       IP       | CPU  |  内存  |  主机名   |
+| :------------: | :--: | :--: | :----: |
+| 192.168.62.142 |  1   | 512M | kafka1 |
+| 192.168.62.147 |  1   | 512M | kafka2 |
+| 192.168.62.152 |  1   | 512M | kafka3 |
 ## 安装ZooKeeper
 以下操作在三台机器上同时进行。
 
 - 安装Java
-```
+```shell
 yum list java*
 yum -y install java-1.7.0-openjdk*
 ```
 - 通过[Apache ZooKeeper官网][1]获取最新的ZooKeeper，文中使用的是ZooKeeper 3.4.9，3台机器软件目录均为/home。
-```
-tar zxvf zookeeper-3.4.9.tar.gz 解压。
-mkdir data 快照日志的存储路径
+```shell
+# 解压。
+tar zxvf zookeeper-3.4.9.tar.gz
+# 在快照日志的存储路径创建数据目录
+mkdir data
 ```
 - 修改配置文件
-```
+```shell
 cd /home/zookeeper-3.4.9/conf
 
 [root@kafka1 conf]# ll
@@ -34,8 +38,8 @@ total 12
 -rw-rw-r--. 1 1001 1001 1026 Oct 25 04:04 zoo_sample.cfg
 
 ```
-其中<code>zoo_sample.cfg</code>是官方给出的一份配置文件样例，需要将其**复制**或**重命名**为<code>zoo.cfg</code>。
-```
+其中`zoo_sample.cfg`是官方给出的一份配置文件样例，需要将其**复制**或**重命名**为`zoo.cfg`。
+```properties
 vim zoo.cfg
 
 # 服务器之间或客户端与服务器之间维持心跳的时间间隔，也就是每个 tickTime 时间就会发送一个心跳
@@ -53,10 +57,10 @@ server.1=192.168.62.142:12888:13888
 server.2=192.168.62.147:12888:13888
 server.3=192.168.62.152:12888:13888
 ```
-<code>server.1</code>这个1是服务器的标识也可以是其他的数字， 表示这个是第几号服务器，用来标识服务器，这个标识要写到快照目录下面myid文件里(即<code>/home/data/myid</code>)。192.168.62.142为集群里的IP地址，第一个端口是master和slave之间的通信端口，默认是2888，第二个端口是leader选举的端口，集群刚启动的时候选举或者leader挂掉之后进行新的选举的端口，默认是3888。
+`server.1`这个1是服务器的标识也可以是其他的数字， 表示这个是第几号服务器，用来标识服务器，这个标识要写到快照目录下面myid文件里(即`/home/data/myid`)。192.168.62.142为集群里的IP地址，第一个端口是`master`和`slave`之间的通信端口，默认是2888，第二个端口是`leader`选举的端口，集群刚启动的时候选举或者`leader`挂掉之后进行新的选举的端口，默认是3888。
 
 - 创建myid文件
-```
+```sh
 # kafka1
 echo "1" > /home/data/myid
 # kafka2
@@ -66,7 +70,7 @@ echo "3" > /home/data/myid
 ```
 
 - 启动ZK
-```
+```shell
 cd /home/zookeeper-3.4.9/bin
 ./zkServer.sh start 在三个节点上均执行此操作
 
@@ -88,14 +92,14 @@ Mode: follower 该节点为从节点
 ```
 
 ## 安装Kafka
-- 通过[Apache Kafka官网][2]获取Kafka安装包，文中使用的是<code>kafka_2.10-0.8.2.1</code>。
-```
+- 通过[Apache Kafka官网][2]获取Kafka安装包，文中使用的是`kafka_2.10-0.8.2.1`。
+```sh
 tar zxvf kafka_2.10-0.8.2.1.tgz
 cd kafka_2.10-0.8.2.1
 ```
 
 - 修改Kafka配置文件
-```
+```properties
 vim /home/kafka_2.10-0.8.2.1/config/server.properties
 
 # 当前机器在集群中的唯一标识，和zookeeper的myid性质一样
@@ -137,7 +141,7 @@ zookeeper.connect=kafka1:2181,kafka2:2181,kafka3:2181
 ```
 
 - 启动Kafka
-```
+```shell
 cd /home/kafka_2.10-0.8.2.1
 bin/kafka-server-start.sh config/server.properties
 
@@ -161,7 +165,7 @@ kafka_topic
 
 - 在集群的每个节点的/etc/hosts文件里对其他两个节点做DNS
 - 关闭每个节点的防火墙
-```
+```sh
 # 暂时关闭，立即生效，重启后失效
 service iptables stop
 # 永久关闭，重启后生效
@@ -173,5 +177,5 @@ chkconfig iptables off
 
 这是由于只启动了一个zk节点导致的，只要把集群里的其他节点启动起来即可解决。
 
-  [1]: http://zookeeper.apache.org/releases.html#download
-  [2]: http://kafka.apache.org/downloads
+[1]: http://zookeeper.apache.org/releases.html#download
+[2]: http://kafka.apache.org/downloads
